@@ -296,7 +296,7 @@ for _ in range(metadata['epochs']):
     params = get_one_tree_and_seq(tree_params, seq_params, pos)
     
     if(cost.min() < best_ans):
-        if(_%100==0):
+        if(_%20==0):
             print_success_info("Found a better tree at epoch %d with cost %f from tree %d. (delta at epoch = %d) \n" % (_, cost.min(), pos, cost.max()-cost.min()))
         best_ans = cost.min()
         
