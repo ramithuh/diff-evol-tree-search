@@ -18,11 +18,11 @@ To run examples in colab, click the below link
 
 Other params :
 
-* sequence length : -sl
-* mutations per bifurcation : -m
-* alphabet size : -nl
-* epochs/steps : -e
-* initialization count to run in parallel : -ic
+* sequence length : `-sl`
+* mutations per bifurcation : `-m`
+* alphabet size : `-nl`
+* epochs/steps : `-e`
+* initialization count to run in parallel : `-ic`
 
 During running, every 200 steps it will print the `soft_parsimony_score` and `parsimony_score` (last two values in each line)
 
