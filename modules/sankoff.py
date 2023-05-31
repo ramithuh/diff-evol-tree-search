@@ -70,107 +70,7 @@ def run_dp(adj : Float[Array, "nodes nodes"], dp, dp_nodes, seq, cost_mat, n_let
 
     return dp, dp_nodes
 
-def run_diff_dp(adj : Float[Array, "nodes nodes"], dp, seq, cost_mat, n_letters, epsilon = 1e-5, verbose = True):
-    '''
-        Run sankoff algorithm given the tree topology and the leaf sequences
-        
-        Args:
-            adj: adjacency matrix of the tree
-            dp : blank dp table
-            seq : leaf sequences
-            args : metadata
-            verbose : print the progress of the algorit hm
-            
-        Returns:
-            dp : filled dp table
-            dp_nodes : <TODO>
-    '''
-    
-    n_all    = adj.shape[0]
-    n_leaves = (n_all + 1)//2
-
-    for i in range(0, n_leaves): # initailize the dp table
-        dp =  dp.at[i,seq[i].astype(int)].set(0) ## sequences are fixed!! so no need to propogate the gradients till then
-
-
-    for node in range(n_leaves, n_all): ## loop all the ancestors in order
-        
-        ## consider topologically feasible candidates (slicing -> :node)
-        prob_children    = jax.nn.softmax(adj[:,node][:node]*5)*2 #softranks(adj[:,node][:node], epsilon = epsilon)/epsilon)*2 
-        children_onehot  = jnp.eye(node,node).astype(jnp.float64)*prob_children
-        
-        #print(prob_children)
-        delta = 1e1*(adj[:,node][:node].sum() - 2)**2
-        
-        mask = jnp.matmul(children_onehot, jnp.ones((node,dp.shape[1])).astype(jnp.float64)) #mask to supress rows from the dp table
-
-        if(verbose):
-            print(f"at node {node+1} children are : {adj[:,node][:node]}")
-            print(f" probable children are -> {prob_children}")
-            print("_____")
-        
-        dp_sel = jnp.matmul(children_onehot,dp[:node]) ##lookup dp table's first node-1 rows (topologically feasible candidates)
-        node_mix = cost_mat[::,::] + dp_sel[::, None]
-        
-        ans = node_mix * mask[::, None]
-        ans = softmin(ans, epsilon, axis = 2) #-nn.logsumexp(-ans/epsilon, axis = 2)*epsilon
-        ans = jnp.sum(ans, axis = 0) + delta #penalize more if connections are not rigid
-
-        dp = dp.at[node,::].set(ans)
-
-    return dp
-
 vectorized_dp      = jax.vmap(run_dp, (None, 0, 0, 1, None, None, None), 0)
-vectorized_diff_dp = jax.vmap(run_diff_dp, (None, 0, 1, None, None, None, None), 0)
-
-
-def backtrack_dp(node, letter, seq_chars, connections, n_leaves):
-    '''
-        Derive the ancestor sequences from the dp table and the node information
-        
-        Args:
-            node : current node
-            letter : letter used for current node
-            seq_chars : blank sequence table (leaf sequences are already filled)
-            connections : node information
-            args : metadata
-        
-        Return : 
-            seq_chars : filled sequence table (computed ancestor sequences)
-    '''
-
-    if(node < n_leaves): #break if it's a leaf
-        return seq_chars
-
-
-    seq_chars = seq_chars.at[node].set(letter)
-
-    child = connections[node,letter]
-
-    seq_chars = backtrack_dp(child[0].astype(int), child[1].astype(int), seq_chars, connections, n_leaves)
-    seq_chars = backtrack_dp(child[2].astype(int), child[3].astype(int), seq_chars, connections, n_leaves)
-
-    return seq_chars
-
-def run_diff_sankoff(adj, cost_mat, seq, metadata, epsilon = 1e-5):
-    adj = adj.at[-1,-1].set(0) ##manually remove self connection (convention used in the train script)
-    
-    ## ensure types are float64
-    adj = adj.astype(jnp.float64)
-    seq = seq.astype(jnp.float64)
-    cost_mat = cost_mat.astype(jnp.float64)
-    
-    n_letters = metadata['n_letters']
-    n_leaves  = metadata['n_leaves']
-    
-    ##empty dp table
-    dp       = jnp.ones((seq.shape[1], metadata['n_all'], n_letters)).astype(jnp.float64)*1e5
-    
-    # connections = dp_nodes.copy()
-        
-    dp = vectorized_diff_dp(adj, dp, seq, cost_mat, n_letters, epsilon, False)
-
-    return dp, softmin(dp[:, -1], epsilon, axis = 1).sum() #dp[:, -1].min(axis = 1).sum()
 
 def run_sankoff(adj, cost_mat, seq, metadata, return_path = False):
     adj = adj.at[-1,-1].set(0) ##manually remove self connection (convention used in the train script)
@@ -220,3 +120,110 @@ def run_sankoff(adj, cost_mat, seq, metadata, return_path = False):
 
     
     return found_seq, dp, dp[:, -1].min(axis = 1).sum()
+
+def backtrack_dp(node, letter, seq_chars, connections, n_leaves):
+    '''
+        Derive the ancestor sequences from the dp table and the node information
+        
+        Args:
+            node : current node
+            letter : letter used for current node
+            seq_chars : blank sequence table (leaf sequences are already filled)
+            connections : node information
+            args : metadata
+        
+        Return : 
+            seq_chars : filled sequence table (computed ancestor sequences)
+    '''
+
+    if(node < n_leaves): #break if it's a leaf
+        return seq_chars
+
+
+    seq_chars = seq_chars.at[node].set(letter)
+
+    child = connections[node,letter]
+
+    seq_chars = backtrack_dp(child[0].astype(int), child[1].astype(int), seq_chars, connections, n_leaves)
+    seq_chars = backtrack_dp(child[2].astype(int), child[3].astype(int), seq_chars, connections, n_leaves)
+
+    return seq_chars
+
+'''
+    Functions below are work in progress
+'''
+
+def run_diff_dp(adj : Float[Array, "nodes nodes"], dp, seq, cost_mat, n_letters, epsilon = 1e-5, verbose = True):
+    '''
+        Run sankoff algorithm given the tree topology and the leaf sequences (work in progress)
+        
+        Args:
+            adj: adjacency matrix of the tree
+            dp : blank dp table
+            seq : leaf sequences
+            args : metadata
+            verbose : print the progress of the algorit hm
+            
+        Returns:
+            dp : filled dp table
+            dp_nodes : <TODO>
+    '''
+    
+    n_all    = adj.shape[0]
+    n_leaves = (n_all + 1)//2
+
+    for i in range(0, n_leaves): # initailize the dp table
+        dp =  dp.at[i,seq[i].astype(int)].set(0) ## sequences are fixed!! so no need to propogate the gradients till then
+
+
+    for node in range(n_leaves, n_all): ## loop all the ancestors in order
+        
+        ## consider topologically feasible candidates (slicing -> :node)
+        prob_children    = jax.nn.softmax(adj[:,node][:node]*5)*2 #softranks(adj[:,node][:node], epsilon = epsilon)/epsilon)*2 
+        children_onehot  = jnp.eye(node,node).astype(jnp.float64)*prob_children
+        
+        #print(prob_children)
+        delta = 1e1*(adj[:,node][:node].sum() - 2)**2
+        
+        mask = jnp.matmul(children_onehot, jnp.ones((node,dp.shape[1])).astype(jnp.float64)) #mask to supress rows from the dp table
+
+        if(verbose):
+            print(f"at node {node+1} children are : {adj[:,node][:node]}")
+            print(f" probable children are -> {prob_children}")
+            print("_____")
+        
+        dp_sel = jnp.matmul(children_onehot,dp[:node]) ##lookup dp table's first node-1 rows (topologically feasible candidates)
+        node_mix = cost_mat[::,::] + dp_sel[::, None]
+        
+        ans = node_mix * mask[::, None]
+        ans = softmin(ans, epsilon, axis = 2) #-nn.logsumexp(-ans/epsilon, axis = 2)*epsilon
+        ans = jnp.sum(ans, axis = 0) + delta #penalize more if connections are not rigid
+
+        dp = dp.at[node,::].set(ans)
+
+    return dp
+
+vectorized_diff_dp = jax.vmap(run_diff_dp, (None, 0, 1, None, None, None, None), 0)
+
+def run_diff_sankoff(adj, cost_mat, seq, metadata, epsilon = 1e-5):
+    '''
+        (Work in progress -> making sankoff algorithm differentiable)
+    '''
+    adj = adj.at[-1,-1].set(0) ##manually remove self connection (convention used in the train script)
+    
+    ## ensure types are float64
+    adj = adj.astype(jnp.float64)
+    seq = seq.astype(jnp.float64)
+    cost_mat = cost_mat.astype(jnp.float64)
+    
+    n_letters = metadata['n_letters']
+    n_leaves  = metadata['n_leaves']
+    
+    ##empty dp table
+    dp       = jnp.ones((seq.shape[1], metadata['n_all'], n_letters)).astype(jnp.float64)*1e5
+    
+    # connections = dp_nodes.copy()
+        
+    dp = vectorized_diff_dp(adj, dp, seq, cost_mat, n_letters, epsilon, False)
+
+    return dp, softmin(dp[:, -1], epsilon, axis = 1).sum() #dp[:, -1].min(axis = 1).sum()
