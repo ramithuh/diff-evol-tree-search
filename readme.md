@@ -1,4 +1,4 @@
-# differentiable-trees
+# Differentiable Search of Evolutionary Trees from Leaves
 
 Our work introduces a differentiable approach to phylogenetic tree construction, optimizing both tree and ancestral sequences.
 
