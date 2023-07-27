@@ -1,5 +1,8 @@
 # Differentiable Search of Evolutionary Trees from Leaves
 
+(This repo will be further organized for ease of use)
+
+Pre-print - https://www.biorxiv.org/content/10.1101/2023.07.23.550206v1
 Our work introduces a differentiable approach to phylogenetic tree construction, optimizing both tree and ancestral sequences.
 
 ![Optimization of seqs and tree](https://github.com/diff-trees/diff-evol-tree-search/blob/main/intro_vid.gif)
