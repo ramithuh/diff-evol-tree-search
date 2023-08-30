@@ -43,7 +43,7 @@ During running, every 200 steps it will print the `soft_parsimony_score` and `pa
 
 - [ ] Groundtruth trees we evaluate against (optimal solutions) are [`perfect binary trees`](https://xlinux.nist.gov/dads/HTML/perfectBinaryTree.html). 
 We need to evaluate on diverse grountruth trees of uneven leaf levels
-  - [ ] Full binary trees
+  - [ ] Full binary trees (ramithuh/differentiable-trees#30)
   - [ ] Then, binary trees in general
 - [ ] Get rid of site-wise independence assumption
 
