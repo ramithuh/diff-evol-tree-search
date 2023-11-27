@@ -1,10 +1,11 @@
 # Differentiable Search of Evolutionary Trees from Leaves
 
-(This repo will be further organized for ease of use)
+Our work introduces a differentiable approach to phylogenetic tree construction, optimizing both tree and ancestral sequences.
 
 Pre-print - https://www.biorxiv.org/content/10.1101/2023.07.23.550206v1
 
-Our work introduces a differentiable approach to phylogenetic tree construction, optimizing both tree and ancestral sequences.
+* [ICML 2023 Workshop (SODS/DiffAE) Poster (PDF)](https://ramith.fyi/assets/pdf/Diff-Evol-Trees_ICML.pdf)
+* Eric J. Ma has written a very detailed article on our paper's key contribution : making the trees and sequences differentiable. You can read it [here](https://ericmjl.github.io/blog/2023/8/7/journal-club-differentiable-search-of-evolutionary-trees/). It does a great job at explaining our method.
 
 ![Optimization of seqs and tree](https://github.com/diff-trees/diff-evol-tree-search/blob/main/intro_vid.gif)
 
