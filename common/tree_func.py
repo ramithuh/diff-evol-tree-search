@@ -21,10 +21,7 @@ def update_tree(params : Dict[str, Array], epoch : int = 0 ,  temp : Float = 1 )
     n_ancestors = tree.shape[1]
     n_leaves = n_all - n_ancestors
 
-    key = jax.random.PRNGKey(epoch)
-    gumbel_noise = jax.random.gumbel(key, (tree.shape[0], tree.shape[1]))
-
-    perturbed_tree_params = tree + gumbel_noise*0.0
+    perturbed_tree_params = tree
 
     inf_matrix = -jnp.ones((n_all, n_all))*jnp.inf
 
@@ -50,7 +47,7 @@ def update_seq(params : Dict[str, Array], seqs : Float[Array, "nodes letters"], 
     return seqs
 
 @jit
-def enforce_graph(t_ : Float[Array, "nodes nodes"], s : Float, metadata = None, verbose = False) -> List[Float]:
+def enforce_graph(t_ : Float[Array, "nodes nodes"], s : Float, verbose = False) -> List[Float]:
     n_all = t_.shape[0]
     n_leaves = (n_all + 1)//2
     n_ancestors = n_all - n_leaves
@@ -80,55 +77,24 @@ def compute_cost(sequences : Float[Array, "nodes seq_length letters"], tree : Fl
     ans = sm[jnp.round(selection_).astype(jnp.int64),jnp.round(sequences_).astype(jnp.int64)].sum()
     return ans
 
-def compute_loss(params : Dict[str, Array], seqs : Float[Array, "nodes length letters"], base_tree : Float[Array, "nodes nodes"], metadata : Dict, temp : Float, epoch : int = 0, verbose = False) -> Float:
-    n_leaves = metadata['n_leaves']
-    n_all    = metadata['n_all']
-
-    if(metadata['args']['fix_seqs']):
-        seqs_ = seqs
-    else:
-        seqs_ = update_seq(params, seqs, temp )
-
-    if(metadata['args']['fix_tree']):
-        t_ = base_tree
-    else:
-        t_ = update_tree(params, epoch)
-
-    cost_surrogate = compute_surrogate_cost(seqs_,t_)
-    tree_force_loss = enforce_graph(t_,10,metadata)
-    loss = cost_surrogate + temp*(tree_force_loss)
-
-    if(verbose):
-        sm   = jnp.ones((metadata['n_letters'],metadata['n_letters'])) - jnp.identity(metadata['n_letters']).astype(jnp.bfloat16)
-        cost = compute_cost(seqs_,t_, sm)
-        return cost, cost_surrogate, tree_force_loss, loss
-
-    return loss
-
 @jit
-def compute_loss_optimized(tree_params : Dict[str, Array], seq_params : Dict[str, Array], seqs : Float[Array, "nodes length letters"], metadata : Dict, temp : Float, epoch : int) -> Float:
-    n_leaves = metadata['n_leaves']
-    n_all    = metadata['n_all']
-
+def compute_loss_optimized(tree_params : Dict[str, Array], seq_params : Dict[str, Array], seqs : Float[Array, "nodes length letters"], temp : Float, epoch : int) -> Float:
     seqs_ = update_seq(seq_params, seqs, temp )
     t_ = update_tree(tree_params, epoch, temp)
 
     cost_surrogate = compute_surrogate_cost(seqs_,t_)
-    tree_force_loss = enforce_graph(t_,10,metadata)
+    tree_force_loss = enforce_graph(t_,10)
     loss = cost_surrogate + temp*(tree_force_loss)
 
     return loss
 
 @jit
-def compute_detailed_loss_optimized(tree_params : Dict[str, Array], seq_params : Dict[str, Array], seqs : Float[Array, "nodes length letters"], metadata : Dict, temp : Float, sm : Float[Array, "letters letters"], epoch : int = 0) -> Float:
-    n_leaves = metadata['n_leaves']
-    n_all    = metadata['n_all']
-
+def compute_detailed_loss_optimized(tree_params : Dict[str, Array], seq_params : Dict[str, Array], seqs : Float[Array, "nodes length letters"], temp : Float, sm : Float[Array, "letters letters"], epoch : int = 0) -> Float:
     seqs_ = update_seq(seq_params, seqs, temp )
     t_ = update_tree(tree_params, epoch, temp)
 
     cost_surrogate = compute_surrogate_cost(seqs_,t_)
-    tree_force_loss = enforce_graph(t_,10,metadata)
+    tree_force_loss = enforce_graph(t_,10)
     loss = cost_surrogate + temp*(tree_force_loss)
 
     cost = compute_cost(seqs_,t_, sm)

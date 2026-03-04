@@ -10,8 +10,8 @@ from common import *
 # ── Objectives ──
 
 def inner_objective(seq_params, tree_params, data):
-    seqs, metadata, temp, epoch = data
-    return compute_loss_optimized(tree_params, seq_params, seqs, metadata, temp, epoch)
+    seqs, temp, epoch = data
+    return compute_loss_optimized(tree_params, seq_params, seqs, temp, epoch)
 
 # These will be set after optimizer creation (need seq_optimizer reference)
 seq_optimizer = None
@@ -24,9 +24,9 @@ def inner_loop_solver(seq_params, tree_params, data):
     return seq_params
 
 def outer_objective(tree_params, seq_params, data):
-    seqs, metadata, temp, epoch = data
+    seqs, temp, epoch = data
     seq_params = inner_loop_solver(seq_params, tree_params, data)
-    return compute_loss_optimized(tree_params, seq_params, seqs, metadata, temp, epoch), seq_params
+    return compute_loss_optimized(tree_params, seq_params, seqs, temp, epoch), seq_params
 
 # ── Setup ──
 
@@ -59,7 +59,7 @@ tree_optimizer = OptaxSolver(
     fun=outer_objective, has_aux=True
 )
 vmap_tree_init = vmap(tree_optimizer.init_state, (0, 0, None), 0)
-tree_opt_state = vmap_tree_init(tree_params, seq_params, [seqs, metadata, metadata['tLs'][0], 0])
+tree_opt_state = vmap_tree_init(tree_params, seq_params, [seqs, metadata['tLs'][0], 0])
 jitted_tree_update = jit(vmap(tree_optimizer.update, (0, 0, 0, None), 0))
 
 # ── Update step ──
@@ -69,7 +69,7 @@ def update_step(tree_params, seq_params, seqs, metadata, epoch):
 
     tree_params, nonlocal_state['tree'] = jitted_tree_update(
         tree_params, nonlocal_state['tree'], nonlocal_state['tree'].aux,
-        [seqs, metadata, metadata['tLs'][0], epoch]
+        [seqs, metadata['tLs'][0], epoch]
     )
     seq_params = nonlocal_state['tree'].aux
 

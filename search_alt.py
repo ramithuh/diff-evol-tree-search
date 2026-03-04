@@ -9,12 +9,12 @@ from common import *
 # ── Objectives ──
 
 def inner_objective(seq_params, tree_params, data):
-    seqs, metadata, temp, epoch = data
-    return compute_loss_optimized(tree_params, seq_params, seqs, metadata, temp, epoch)
+    seqs, temp, epoch = data
+    return compute_loss_optimized(tree_params, seq_params, seqs, temp, epoch)
 
 def outer_objective(tree_params, seq_params, data):
-    seqs, metadata, temp, epoch = data
-    return compute_loss_optimized(tree_params, seq_params, seqs, metadata, temp, epoch)
+    seqs, temp, epoch = data
+    return compute_loss_optimized(tree_params, seq_params, seqs, temp, epoch)
 
 # ── Setup ──
 
@@ -38,12 +38,12 @@ alt_interval = args['alternate_interval'] if args['alternate_interval'] is not N
 
 seq_optimizer = OptaxSolver(opt=optax.adam(metadata['lr_seq']), fun=inner_objective, maxiter=alt_interval)
 vmap_seq_init = vmap(seq_optimizer.init_state, (0, 0, None), 0)
-seq_opt_state = vmap_seq_init(seq_params, tree_params, [seqs, metadata, metadata['tLs'][0], 0])
+seq_opt_state = vmap_seq_init(seq_params, tree_params, [seqs, metadata['tLs'][0], 0])
 jitted_seq_update = jit(vmap(seq_optimizer.update, (0, 0, 0, None), 0))
 
 tree_optimizer = OptaxSolver(opt=optax.adam(metadata['lr']), fun=outer_objective)
 vmap_tree_init = vmap(tree_optimizer.init_state, (0, 0, None), 0)
-tree_opt_state = vmap_tree_init(tree_params, seq_params, [seqs, metadata, metadata['tLs'][0], 0])
+tree_opt_state = vmap_tree_init(tree_params, seq_params, [seqs, metadata['tLs'][0], 0])
 jitted_tree_update = jit(vmap(tree_optimizer.update, (0, 0, 0, None), 0))
 
 # ── Update step ──
@@ -52,12 +52,12 @@ def update_step(tree_params, seq_params, seqs, metadata, epoch):
     nonlocal_state = update_step.state
 
     tree_params, nonlocal_state['tree'] = jitted_tree_update(
-        tree_params, nonlocal_state['tree'], seq_params, [seqs, metadata, metadata['tLs'][0], epoch]
+        tree_params, nonlocal_state['tree'], seq_params, [seqs, metadata['tLs'][0], epoch]
     )
 
     for _ in range(alt_interval):
         seq_params, nonlocal_state['seq'] = jitted_seq_update(
-            seq_params, nonlocal_state['seq'], tree_params, [seqs, metadata, metadata['tLs'][0], epoch]
+            seq_params, nonlocal_state['seq'], tree_params, [seqs, metadata['tLs'][0], epoch]
         )
 
     update_step.state = nonlocal_state

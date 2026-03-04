@@ -90,7 +90,7 @@ def run_search(update_step_fn, tree_params, seq_params, seqs, metadata, sm,
     vmap_keys = generate_vmap_keys(seq_params)
     vmap_compute_detailed = jit(vmap(
         compute_detailed_loss_optimized,
-        ({'t':0}, vmap_keys, None, None, None, None, None), 0
+        ({'t':0}, vmap_keys, None, None, None, None), 0
     ))
 
     best_ans = 1e9
@@ -128,7 +128,7 @@ def run_search(update_step_fn, tree_params, seq_params, seqs, metadata, sm,
 
         # ── Cost computation ──
         cost, cost_surrogate, tree_force_loss, loss = vmap_compute_detailed(
-            tree_params, seq_params, seqs, metadata, metadata['tLs'][0], sm, epoch
+            tree_params, seq_params, seqs, metadata['tLs'][0], sm, epoch
         )
         pos = jnp.argmin(cost)
 
@@ -196,5 +196,9 @@ def run_search(update_step_fn, tree_params, seq_params, seqs, metadata, sm,
 
     # ── Loss curves ──
     plot_loss_curves(history, sankoff_cost, save_dir)
+
+    # ── Parseable result line ──
+    sankoff_val = int(sankoff_cost) if sankoff_cost is not None else -1
+    print(f"\nRESULT | leaves={n_leaves} | seed={metadata['seed']} | sankoff={sankoff_val} | best={int(best_ans)} | final={int(cost[pos])} | epochs={metadata['epochs']}")
 
     return best_ans, best_tree, best_seq
