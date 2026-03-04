@@ -212,8 +212,10 @@ def init_params(metadata, seqs, n_leaves, n_ancestors, init_count):
         't': initializer(key + offset, (init_count, n_all - 1, n_ancestors), jnp.float64)
     }
 
+    seq_slices = [initializer(key+i+offset, (init_count, seq_length, n_letters), jnp.float64)
+                   for i in range(n_ancestors)]
     seq_params : Dict[str, Array] = {
-        's': initializer(key + offset, (init_count, n_ancestors, seq_length, n_letters), jnp.float64)
+        's': jnp.stack(seq_slices, axis=1)
     }
 
     if(args['initialize_tree']):
