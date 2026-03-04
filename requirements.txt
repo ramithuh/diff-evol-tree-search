@@ -3,8 +3,5 @@ jaxopt>=0.8.5
 optax>=0.2.7
 jaxtyping>=0.3.9
 matplotlib
-netgraph
 networkx
-plotly
 pydot
-kaleido

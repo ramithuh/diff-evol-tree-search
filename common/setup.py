@@ -15,8 +15,6 @@ from jax import jit, vmap
 from jaxtyping import Array, Float
 from typing import Dict
 
-import plotly.express as px
-
 from .tree_func import *
 from .gt_tree_gen import *
 from .sankoff import *

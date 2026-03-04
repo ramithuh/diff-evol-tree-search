@@ -1,11 +1,8 @@
 import jax
 import numpy as np
-import jax.nn as nn
 import jax.numpy as jnp
 import networkx as nx
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from netgraph import Graph
 
 from networkx.drawing.nx_pydot import graphviz_layout
 
@@ -62,43 +59,3 @@ def show_graph_with_labels(adjacency_matrix, n_leaves, return_img = False):
         return fig
     else:
         fig.show()
-
-def animate_tree(adjacency_matrix, n_leaves, n_ancestors, total_frames = None):
-    if(total_frames == None):
-        total_frames = adjacency_matrix.shape[0]
-
-    n_all = n_leaves + n_ancestors
-
-    label_names = {}
-
-    for i in range(0,adjacency_matrix.shape[1]):
-        label_names[i] = chr(97+i)
-
-    color_map = {}
-    for i in range(0,n_all):
-        if(i >= n_leaves):
-            color_map[i] = 'red'
-        else:
-            color_map[i] = 'Yellow'
-
-    partitions = [
-        list(range(n_leaves)),
-        list(range(n_leaves, n_leaves+n_ancestors-1)),
-        list(range(n_leaves+n_ancestors-1, n_leaves+n_ancestors))
-    ]
-
-    fig, ax = plt.subplots()
-    g = Graph(np.ones((n_all, n_all)), edge_layout='curved', edge_width=2, arrows=True, ax=ax,
-              node_layout='multipartite', node_layout_kwargs=dict(layers=partitions, reduce_edge_crossings=True),
-              node_labels = label_names, node_label_fontdict=dict(size=14),node_color = color_map)
-
-    def update(ii):
-        for (jj, kk), artist in g.edge_artists.items():
-            if adjacency_matrix[ii, jj, kk]:
-                artist.set_visible(True)
-            else:
-                artist.set_visible(False)
-        return g.edge_artists.values()
-
-    animation = FuncAnimation(fig, update, frames=total_frames, interval=200, blit=True)
-    return animation
