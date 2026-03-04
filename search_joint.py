@@ -11,7 +11,7 @@ from common import *
 def objective(params, data):
     seqs, temp, epoch = data
     tree_params = {'t': params['t']}
-    seq_params = {k: v for k, v in params.items() if k != 't'}
+    seq_params = {'s': params['s']}
     return compute_loss_optimized(tree_params, seq_params, seqs, temp, epoch)
 
 # ── Setup ──
@@ -31,7 +31,7 @@ if args['initialize_tree']:
     tree_params['t'] = tree[0:-1, metadata['n_leaves']:] * 100
 
 # Merge into single param dict
-params = {'t': tree_params['t'], **seq_params}
+params = {'t': tree_params['t'], 's': seq_params['s']}
 
 # ── Optimizer ──
 
@@ -50,7 +50,7 @@ def update_step(tree_params, seq_params, seqs, metadata, epoch):
     nonlocal_state = update_step.state
 
     # Merge
-    merged = {'t': tree_params['t'], **seq_params}
+    merged = {'t': tree_params['t'], 's': seq_params['s']}
 
     merged, nonlocal_state['opt'] = jitted_update(
         merged, nonlocal_state['opt'], [seqs, metadata['tLs'][0], epoch]
@@ -60,7 +60,7 @@ def update_step(tree_params, seq_params, seqs, metadata, epoch):
 
     # Split back
     new_tree_params = {'t': merged['t']}
-    new_seq_params = {k: v for k, v in merged.items() if k != 't'}
+    new_seq_params = {'s': merged['s']}
     return new_tree_params, new_seq_params
 
 update_step.state = {'opt': opt_state}

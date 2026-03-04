@@ -212,7 +212,9 @@ def init_params(metadata, seqs, n_leaves, n_ancestors, init_count):
         't': initializer(key + offset, (init_count, n_all - 1, n_ancestors), jnp.float64)
     }
 
-    seq_params : Dict[str, Array] = {}
+    seq_params : Dict[str, Array] = {
+        's': initializer(key + offset, (init_count, n_ancestors, seq_length, n_letters), jnp.float64)
+    }
 
     if(args['initialize_tree']):
         print_critical_info("Initializing tree using groundtruth tree \n")
@@ -220,26 +222,13 @@ def init_params(metadata, seqs, n_leaves, n_ancestors, init_count):
         # caller should handle tree init override after this function returns
         pass
 
-    for i in range(0, n_ancestors):
-        seq_params[str(i)] = initializer(key+i+offset, (init_count, seq_length, n_letters), jnp.float64)
-
     return tree_params, seq_params
 
 # ── Shared helpers ────────────────────────────────────────────────────
 
-def generate_vmap_keys(seq_params):
-    vmap_keys = {}
-    for key in seq_params.keys():
-        vmap_keys[key] = 0
-    return vmap_keys
-
 @jit
 def get_one_tree_and_seq(tree_params, seq_params, pos):
-    new_params = {}
-    new_params['t'] = tree_params['t'][pos]
-    for i in range(0, len(seq_params.keys())):
-        new_params[str(i)] = seq_params[str(i)][pos]
-    return new_params
+    return {'t': tree_params['t'][pos], 's': seq_params['s'][pos]}
 
 def clear_metadata_for_jit(metadata, args):
     """JAX doesn't like some data types when jitting."""

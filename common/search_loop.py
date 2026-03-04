@@ -10,7 +10,7 @@ from .tree_func import *
 from .vis_utils import *
 from .setup import (
     print_critical_info, print_success_info, print_bold_info,
-    generate_vmap_keys, get_one_tree_and_seq,
+    get_one_tree_and_seq,
 )
 
 
@@ -87,10 +87,9 @@ def run_search(update_step_fn, tree_params, seq_params, seqs, metadata, sm,
 
     os.makedirs(save_dir, exist_ok=True)
 
-    vmap_keys = generate_vmap_keys(seq_params)
     vmap_compute_detailed = jit(vmap(
         compute_detailed_loss_optimized,
-        ({'t':0}, vmap_keys, None, None, None, None), 0
+        ({'t':0}, {'s': 0}, None, None, None, None), 0
     ))
 
     best_ans = 1e9

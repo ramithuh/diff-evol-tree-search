@@ -38,12 +38,8 @@ def update_tree(params : Dict[str, Array], epoch : int = 0 ,  temp : Float = 1 )
 def update_seq(params : Dict[str, Array], seqs : Float[Array, "nodes letters"], temperature : Float = 1 ) -> Float[Array, "nodes letters"]:
     n_all = seqs.shape[0]
     n_leaves = (n_all + 1)//2
-
-    for i in range(0, n_all - n_leaves):
-        key = str(i)
-        seq      = nn.softmax(params[key]*temperature)
-        seqs = seqs.at[- n_leaves + i + 1].set(seq)
-
+    ancestor_seqs = nn.softmax(params['s'] * temperature)
+    seqs = seqs.at[n_leaves:].set(ancestor_seqs)
     return seqs
 
 @jit
