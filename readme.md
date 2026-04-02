@@ -13,29 +13,40 @@ To run examples in colab, click the below link
 
 <a href="https://colab.research.google.com/github/diff-trees/diff-evol-tree-search/blob/main/run_on_colab.ipynb" target="_blank"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a> 
 
-#### **Checklist**
-
-* Make sure to select GPU (or remove the `-g 0` flag when running)
-* You can specify your wandb account if you intend to log statistics/tree illustrations
-
-
-#### **Example : running for trees with 16 leaves**
-
-* To run for different number of leaves change the -l to the desired value
-
-Other params :
-
-* sequence length : `-sl`
-* mutations per bifurcation : `-m`
-* alphabet size : `-nl`
-* epochs/steps : `-e`
-* initialization count to run in parallel : `-ic`
-
-During running, every 200 steps it will print the `soft_parsimony_score` and `parsimony_score` (last two values in each line)
+#### **Setup**
 
 ```bash
-!python train_batch_implicit_diff.py -l 16 -nl 20 -m 50 -sl 256 -tLs [0,0.005,10,50] -lr 0.1 -lr_seq 0.01 -t float64-multi-init-run -p Batch-Run-Maximum-Parsimony -alt -n "Final Run" -g 0 -e 5000 -ai 1 -ic 50 -s 42
+conda create -n trees python=3.12 -y && conda activate trees
+pip install -r requirements.txt
 ```
+
+GPU is auto-detected. Use `-g 0` to select a specific GPU.
+
+#### **Three optimization modes**
+
+```bash
+# Bilevel optimization (implicit differentiation) — best results
+python search_bilevel.py -l 16 -m 50 -sl 256 -nl 20 -e 5000 -ai 1 -ic 100 -lr 0.1 -lr_seq 0.01 -tLs "[0,0.005,10,50]" -s 42
+
+# Alternating optimization (tree update -> seq update loop)
+python search_alt.py -l 16 -m 50 -sl 256 -nl 20 -e 5000 -ai 1 -ic 100 -lr 0.1 -lr_seq 0.01 -tLs "[0,0.005,10,50]" -s 42
+
+# Joint optimization (single optimizer, both param sets)
+python search_joint.py -l 16 -m 50 -sl 256 -nl 20 -e 5000 -ic 100 -lr 0.1 -tLs "[0,0.005,10,50]" -s 42
+```
+
+Key params :
+
+* `-l` : number of leaves
+* `-sl` : sequence length
+* `-m` : mutations per bifurcation
+* `-nl` : alphabet size
+* `-e` : epochs/steps
+* `-ic` : initialization count to run in parallel (vmapped)
+* `-ai` : for alternating mode: number of seq updates per tree update. For bilevel mode: number of inner solver steps before implicit diff computes the outer gradient.
+
+During running, every 200 steps it will print the `surrogate_cost`, `hard_cost` and `loss` side-by-side.
+Tree visualizations and sequence heatmaps are saved to `figures/`.
 
 
 
